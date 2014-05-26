@@ -54,7 +54,7 @@ var parseString = require('xml2js').parseString;
 var DOMParser = require('xmldom').DOMParser;
 var fs = require('fs');
 var Log = require('log');
-var log = new Log('debug', fs.createWriteStream('log.txt', {'flags':'a'}));
+var log = new Log('debug', fs.createWriteStream('snifferlog.txt', {'flags':'a'}));
 
 //******************* setup the proxy ***********************
 // all environments
@@ -176,8 +176,8 @@ requestChannel = function(){
 		res.setEncoding('utf8');
 		var resbody = "";
 		res.on('data', function (chunk) {
+			console.log(chunk + '\r\n' + '\r\n');
 			log.info("< " + chunk + '\r\n');
-			console.log("<- " + chunk);
         	resbody += chunk;
         	if(resbody.indexOf(EVENT_CLOSE) >= 0 || resbody.indexOf(CHANNEL_CLOSE) >= 0 || resbody.indexOf(HEARTBEAT_CLOSE) >= 0){
 				parseChunk(resbody);
@@ -289,7 +289,7 @@ eventSubscription = function(event, username, password){
 
 	req.write(xml_data);
 	req.end();
-	log.info('> POST ' + BW_URL + "/com.broadsoft.xsi-events/v2.0/user/" + username + '\r\n' + xml_data + '\r\n');
+	log.info('> POST ' + BW_URL + "/com.broadsoft.xsi-events/v2.0/serviceprovider/PBXL%20Inc./group/PBXL_Test" + '\r\n' + xml_data + '\r\n');
 };
 
 sendResponseEvent = function(eventId){
@@ -331,10 +331,6 @@ parseChunk = function(chunk){ //chunk is already string
 			bwconnection.channelId = result.Channel.channelId;
 			//start heartbeat
 			startHeartbeat(result.Channel.channelId);
-			//channel events subscription
-			/*for(var index in credentials){
-				eventSubscription('Advanced Call', credentials[index].username, credentials[index].password);
-			}*/
 			eventSubscription('Advanced Call', 'jp_zentest@pbxl.net', 'Borras123');
 		});
 	}else if(chunk.indexOf('<ChannelHeartBeat ') >= 0){
@@ -348,22 +344,23 @@ parseChunk = function(chunk){ //chunk is already string
 		var eventid = xmldoc.getElementsByTagName('xsi:eventID').item(0).firstChild.nodeValue;
 		sendResponseEvent(eventid);
 		var userid = xmldoc.getElementsByTagName('xsi:userId').item(0).firstChild.nodeValue;
+		var targetid = xmldoc.getElementsByTagName('xsi:targetId').item(0).firstChild.nodeValue;
+		var remoteparty = xmldoc.getElementsByTagName('xsi:address').item(0).firstChild.nodeValue.substring(5);
 		var eventType = xmldoc.getElementsByTagName('xsi:eventData').item(0).getAttribute('xsi1:type').trim();
 		eventType = eventType.substring(4);//string off the prefix "xsi:" from the eventType
 		switch(eventType){
 			case 'CallReceivedEvent':
-				var callerid = xmldoc.getElementsByTagName('xsi:address').item(0).firstChild.nodeValue.substring(5);
 				var countrycode = xmldoc.getElementsByTagName('xsi:address').item(0).getAttribute('countryCode');
-				if(callerid.indexOf(countrycode) >= 0){
-					callerid = callerid.replace(countrycode, '0');
+				if(remoteparty.indexOf(countrycode) >= 0){
+					remoteparty = remoteparty.replace(countrycode, '0');
 				}
-				console.log("INFO: CallReceived(from: " + callerid + ") <-");
+				console.log("INFO: CallReceived(from: " + remoteparty + " to: " + targetid + ") <-");
 				break;
 			case 'CallAnsweredEvent':
-				console.log("INFO: CallAnsweredEvent(userid: " + userid + ") <-");
+				console.log("INFO: CallAnsweredEvent(userid: " + remoteparty + ") <-");
 				break;
 			case 'CallReleasedEvent':
-				console.log("INFO: CallReleasedEvent(userid: " + userid + ") <-");
+				console.log("INFO: CallReleasedEvent(userid: " + remoteparty + ") <-");
 				break;
 			case 'CallUpdatedEvent':
 				console.log("INFO: CallUpdatedEvent <-");
@@ -372,10 +369,10 @@ parseChunk = function(chunk){ //chunk is already string
 				console.log("INFO: CallSubscriptionEvent <-");
 				break;
 			case 'CallOriginatedEvent':
-				console.log("INFO: CallReleasedEvent(userid: " + userid + ") <-");
+				console.log("INFO: CallOriginatedEvent(from: " + targetid + " to: " + remoteparty + ") <-");
 				break;
 			case 'CallRetrievedEvent':
-				console.log("INFO: CallReleasedEvent(userid: " + userid + ") <-");
+				console.log("INFO: CallRetrievedEvent(userid: " + remoteparty + ") <-");
 				break;
 			case 'CallHeldEvent':
 				console.log('INFO: CallHelEvent <-');
