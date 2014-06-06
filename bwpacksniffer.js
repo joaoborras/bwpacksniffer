@@ -394,17 +394,4 @@ parseChunk = function(chunk){ //chunk is already string
 };
 
 //**************** listen for incoming events ***********************
-var opts = {key: fs.readFileSync('key.pem'), cert: fs.readFileSync('cert.pem')};
-
-/*http.createServer(app).listen(app.get('port'), function() {
-	console.log('Express server listening on port ' + app.get('port'));
-	//**************** start the server by registering a channel in BW ************
-	requestChannel();
-});*/
-
-/*mainhttps = require('https');
-mainhttps.createServer(opts, app).listen(app.get('port'), function(){
-	console.log('Express HTTPS server listening on port ' + app.get('port'));
-});*/
-
 requestChannel();
