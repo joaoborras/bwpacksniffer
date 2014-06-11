@@ -42,6 +42,7 @@ var CHANNEL_CLOSE = '</Channel>';
 var HEARTBEAT_CLOSE = '<ChannelHeartBeat xmlns="http://schema.broadsoft.com/xsi"/>';
 
 //****************** required objects and libs ***********************
+require('monitor').start();
 var express = require('express');
 var http = require('http'); //http object used to connect the proxy with BW server
 var path = require('path');
