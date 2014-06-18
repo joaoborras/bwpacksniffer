@@ -133,17 +133,21 @@ requestChannel = function(){
 			},5000);
 		}
 		res.setEncoding('utf8');
+		var resbuffer = '';
+		var index = 0;
 		var resbody = "";
 		res.on('data', function (chunk) {
-			log.info("<- " + chunk + '\r\n');
-			console.log(chunk);
         	resbody += chunk;
         	if(resbody.indexOf(EVENT_CLOSE) >= 0 || resbody.indexOf(CHANNEL_CLOSE) >= 0 || 
         		resbody.indexOf(HEARTBEAT_CLOSE) >= 0 || resbody.indexOf(SUBSCRIPTION_CLOSE) >= 0){
+				log.info("<- " + chunk + '\r\n');
+				console.log(chunk);
 				parseChunk(resbody);
 				resbody = ""; //prepares to receive a new event, if any!
 			}else if(resbody.indexOf('<ChannelHeartBeat ') >= 0){
 				//do nothing here as it is only answer from the heartbeat command
+			}else{
+				resbuffer += chunk;
 			}
     	});
 		res.on('error', function(e){
@@ -220,7 +224,6 @@ startHeartbeat = function(){
 		var req = http.request(options, function(res) {
 			if(res.statusCode != 200){//some problems happened with the channel. Open a new one
 				log.error("<- response from BW on heartbeat: " + res.statusCode + '\r\n');
-				requestChannel();
 			}
 		  	log.info("<- response from BW on heartbeat: " + res.statusCode + '\r\n');
 		});
@@ -444,7 +447,7 @@ parseChunk = function(chunk){ //chunk is already string
 				responseobj.write(chunk);
 			}
 			catch(error){}
-			}
+		}
 	}
 };
 
